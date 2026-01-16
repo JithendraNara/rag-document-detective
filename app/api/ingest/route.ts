@@ -18,7 +18,11 @@ if (typeof global.Path2D === 'undefined') {
 
 // Use require for pdf-parse (it works best with next.config.ts canvas: false)
 // @ts-ignore
-const pdf = require('pdf-parse');
+let pdf = require('pdf-parse');
+// Handle ES Module default export if present
+if (typeof pdf !== 'function' && pdf.default) {
+    pdf = pdf.default;
+}
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
