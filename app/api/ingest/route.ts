@@ -5,14 +5,6 @@ const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
 
-// Dynamic import function for pdf-parse
-async function parsePDF(buffer: Buffer): Promise<string> {
-    // Import pdf-parse dynamically
-    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const data = await pdfParse(buffer);
-    return data.text;
-}
-
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
@@ -28,9 +20,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF using pdf-parse
+        // 2. Read PDF using pdf-parse with dynamic import
         const buffer = Buffer.from(await file.arrayBuffer());
-        const text = await parsePDF(buffer);
+        
+        // Dynamic import to handle module resolution
+        const pdfParseModule = await import('pdf-parse');
+        const pdfParse = pdfParseModule.default || pdfParseModule;
+        const data = await pdfParse(buffer);
+        const text = data.text;
 
         // 3. Chunk Text
         const chunkSize = 1000;
