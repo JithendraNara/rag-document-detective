@@ -23,11 +23,12 @@ export async function POST(req: NextRequest) {
         // 2. Read PDF using pdf-parse with dynamic import
         const buffer = Buffer.from(await file.arrayBuffer());
         
-        // Dynamic import to handle module resolution
-        const pdfParseModule = await import('pdf-parse');
-        const pdfParse = pdfParseModule.default || pdfParseModule;
+        // Dynamic import with type assertion to handle module resolution
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pdfParseModule = await import('pdf-parse') as any;
+        const pdfParse = pdfParseModule.default ?? pdfParseModule;
         const data = await pdfParse(buffer);
-        const text = data.text;
+        const text: string = data.text;
 
         // 3. Chunk Text
         const chunkSize = 1000;
@@ -79,8 +80,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, chunks: chunks.length });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Ingestion error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
