@@ -1,8 +1,8 @@
 // Polyfills MUST be defined before any imports that use pdfjs-dist
-declare const globalThis: typeof global;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const g = globalThis as any;
 
-// @ts-expect-error - Polyfill for serverless
-globalThis.DOMMatrix = globalThis.DOMMatrix || class DOMMatrix {
+g.DOMMatrix = g.DOMMatrix || class DOMMatrix {
     m11 = 1; m12 = 0; m13 = 0; m14 = 0;
     m21 = 0; m22 = 1; m23 = 0; m24 = 0;
     m31 = 0; m32 = 0; m33 = 1; m34 = 0;
@@ -16,15 +16,13 @@ globalThis.DOMMatrix = globalThis.DOMMatrix || class DOMMatrix {
     transformPoint() { return { x: 0, y: 0, z: 0, w: 1 }; }
 };
 
-// @ts-expect-error - Polyfill for serverless
-globalThis.Path2D = globalThis.Path2D || class Path2D {
+g.Path2D = g.Path2D || class Path2D {
     addPath() {} closePath() {} moveTo() {} lineTo() {}
     bezierCurveTo() {} quadraticCurveTo() {} arc() {}
     arcTo() {} ellipse() {} rect() {}
 };
 
-// @ts-expect-error - Polyfill for serverless
-globalThis.ImageData = globalThis.ImageData || class ImageData {
+g.ImageData = g.ImageData || class ImageData {
     width = 0; height = 0; data = new Uint8ClampedArray();
     colorSpace = 'srgb';
     constructor(w?: number, h?: number) {
