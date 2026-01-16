@@ -8,6 +8,7 @@ export default function AdminPage() {
     const [file, setFile] = useState<File | null>(null);
     const [status, setStatus] = useState<string>('');
     const [loading, setLoading] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,144 +31,195 @@ export default function AdminPage() {
 
             if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-            setStatus(`✅ Success! Ingested ${data.chunks} chunks from "${file.name}"`);
+            setStatus(`Success! Ingested ${data.chunks} chunks from "${file.name}"`);
             setFile(null);
         } catch (err: any) {
-            setStatus(`❌ Error: ${err.message}`);
+            setStatus(`Error: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const droppedFile = e.dataTransfer.files[0];
+            if (droppedFile.type === 'application/pdf') {
+                setFile(droppedFile);
+                setStatus('');
+            }
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white font-sans flex items-center justify-center p-4">
-            <div className="max-w-xl w-full bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-8 relative overflow-hidden">
-                {/* Decorative background glow */}
-                <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="admin-container">
+            {/* Header */}
+            <header className="admin-header">
+                <Link href="/" className="back-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="19" y1="12" x2="5" y2="12" />
+                        <polyline points="12 19 5 12 12 5" />
+                    </svg>
+                    <span>Back to Chat</span>
+                </Link>
+            </header>
 
-                <div className="relative z-10">
-                    <Link href="/" className="inline-flex items-center text-sm text-gray-400 hover:text-white mb-6 transition-colors group">
-                        <svg className="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Back to Chat
-                    </Link>
+            {/* Main Content */}
+            <main className="admin-main">
+                <div className="admin-card">
+                    <div className="admin-card-header">
+                        <div className="admin-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                <line x1="12" y1="6" x2="16" y2="6" />
+                                <line x1="12" y1="10" x2="16" y2="10" />
+                                <line x1="8" y1="6" x2="8.01" y2="6" />
+                                <line x1="8" y1="10" x2="8.01" y2="10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1>Knowledge Base</h1>
+                            <p>Upload PDF documents to train your AI assistant</p>
+                        </div>
+                    </div>
 
-                    <h1 className="text-3xl font-extrabold mb-2 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                        Knowledge Base
-                    </h1>
-                    <p className="text-gray-400 mb-8 text-sm">
-                        Upload PDFs to train your AI assistant. Secure access only.
-                    </p>
-
-                    <form onSubmit={handleUpload} className="space-y-6">
-                        <div className="group">
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2 group-focus-within:text-blue-400 transition-colors">
-                                Access Key
-                            </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-inner"
-                                placeholder="Enter admin password..."
-                            />
+                    <form onSubmit={handleUpload} className="upload-form">
+                        {/* Password Input */}
+                        <div className="form-group">
+                            <label htmlFor="password">Admin Password</label>
+                            <div className="input-wrapper">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your admin password"
+                                />
+                            </div>
                         </div>
 
-                        <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 relative ${file ? 'border-green-500/50 bg-green-500/5' : 'border-gray-700 hover:border-gray-500 hover:bg-white/5'
-                            }`}>
-                            <input
-                                type="file"
-                                accept=".pdf"
-                                onChange={(e) => {
-                                    setFile(e.target.files?.[0] || null);
-                                    setStatus('');
-                                }}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-
-                            <div className="flex flex-col items-center gap-3">
+                        {/* File Upload */}
+                        <div className="form-group">
+                            <label>PDF Document</label>
+                            <div
+                                className={`dropzone ${dragActive ? 'drag-active' : ''} ${file ? 'has-file' : ''}`}
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                            >
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={(e) => {
+                                        setFile(e.target.files?.[0] || null);
+                                        setStatus('');
+                                    }}
+                                    className="file-input"
+                                />
                                 {file ? (
-                                    <>
-                                        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <div className="file-preview">
+                                        <div className="file-icon success">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polyline points="20 6 9 17 4 12" />
                                             </svg>
                                         </div>
-                                        <div className="text-center">
-                                            <p className="text-white font-medium break-all">{file.name}</p>
-                                            <p className="text-xs text-green-400 mt-1">Ready to upload</p>
+                                        <div className="file-info">
+                                            <span className="file-name">{file.name}</span>
+                                            <span className="file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                                         </div>
-                                    </>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                                            className="remove-file"
+                                        >
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-1">
-                                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    <div className="dropzone-content">
+                                        <div className="upload-icon">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                <polyline points="17 8 12 3 7 8" />
+                                                <line x1="12" y1="3" x2="12" y2="15" />
                                             </svg>
                                         </div>
-                                        <div>
-                                            <p className="text-gray-300">Click or drag PDF here</p>
-                                            <p className="text-xs text-gray-500 mt-1">PDF files only (max 10MB)</p>
-                                        </div>
-                                    </>
+                                        <span className="dropzone-text">Drop your PDF here or <strong>browse</strong></span>
+                                        <span className="dropzone-hint">PDF files up to 10MB</span>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
+                        {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={loading || !file || !password}
-                            className={`w-full py-3.5 px-4 rounded-xl font-bold text-white shadow-lg transition-all transform duration-200 flex items-center justify-center gap-2 ${loading
-                                    ? 'bg-gray-700 cursor-not-allowed opacity-70'
-                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 hover:shadow-blue-500/25 active:scale-[0.98]'
-                                }`}
+                            className="submit-button"
                         >
                             {loading ? (
                                 <>
-                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span>Ingesting Document...</span>
+                                    <div className="loading-spinner" />
+                                    <span>Processing...</span>
                                 </>
                             ) : (
                                 <>
-                                    <span>Start Ingestion</span>
-                                    <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                                     </svg>
+                                    <span>Start Ingestion</span>
                                 </>
                             )}
                         </button>
 
+                        {/* Status Message */}
                         {status && (
-                            <div className={`p-4 rounded-xl border flex items-start gap-3 animation-fade-in ${status.includes('Success')
-                                    ? 'bg-green-500/10 border-green-500/20 text-green-200'
-                                    : status.includes('Error')
-                                        ? 'bg-red-500/10 border-red-500/20 text-red-200'
-                                        : 'bg-blue-500/10 border-blue-500/20 text-blue-200'
-                                }`}>
-                                <div className={`mt-0.5 ${status.includes('Success') ? 'text-green-400' : status.includes('Error') ? 'text-red-400' : 'text-blue-400'}`}>
-                                    {status.includes('Success') ? '✓' : status.includes('Error') ? '⚠' : 'ℹ'}
-                                </div>
-                                <p className="text-sm font-medium">{status}</p>
+                            <div className={`status-message ${status.includes('Success') ? 'success' : status.includes('Error') ? 'error' : 'info'}`}>
+                                {status.includes('Success') ? (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                    </svg>
+                                ) : status.includes('Error') ? (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </svg>
+                                ) : (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="16" x2="12" y2="12" />
+                                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                                    </svg>
+                                )}
+                                <span>{status}</span>
                             </div>
                         )}
                     </form>
                 </div>
-            </div>
-
-            <style jsx global>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .animation-fade-in {
-                    animation: fadeIn 0.3s ease-out forwards;
-                }
-            `}</style>
+            </main>
         </div>
     );
 }
