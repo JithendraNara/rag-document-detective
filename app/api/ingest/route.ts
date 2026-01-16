@@ -5,26 +5,6 @@ const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
 
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-    return new Promise((resolve, reject) => {
-        // Dynamic require for pdf2json
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const PDFParser = require('pdf2json');
-        const pdfParser = new PDFParser(null, true);
-
-        pdfParser.on('pdfParser_dataError', (errData: { parserError: Error }) => {
-            reject(errData.parserError);
-        });
-
-        pdfParser.on('pdfParser_dataReady', () => {
-            const text = pdfParser.getRawTextContent();
-            resolve(text);
-        });
-
-        pdfParser.parseBuffer(buffer);
-    });
-}
-
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
@@ -40,10 +20,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF
+        // 2. Read PDF using custom wrapper (avoids test file loading)
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const text = await extractTextFromPDF(buffer);
+        
+        // Use require to import the custom wrapper
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdfParse = require('../../../lib/pdf-parse-wrapper');
+        const data = await pdfParse(buffer);
+        const text: string = data.text;
 
         if (!text || text.trim().length === 0) {
             return NextResponse.json({ error: 'Could not extract text from PDF' }, { status: 400 });
