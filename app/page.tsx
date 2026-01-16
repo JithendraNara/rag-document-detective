@@ -74,8 +74,9 @@ export default function Home() {
 
   return (
     <div className="container">
-      <header className="header">
+      <header className="header flex justify-between items-center">
         <h1>📄 Private Doc Detective</h1>
+        <a href="/admin" className="text-sm text-gray-500 hover:text-blue-500 transition-colors">Admin</a>
       </header>
 
       <div className="chat-container">
