@@ -1,68 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 
 export default function AdminPage() {
-    const [password, setPassword] = useState('');
-    const [file, setFile] = useState<File | null>(null);
-    const [status, setStatus] = useState<string>('');
-    const [loading, setLoading] = useState(false);
-    const [dragActive, setDragActive] = useState(false);
-
-    const handleUpload = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!file || !password) return;
-
-        setLoading(true);
-        setStatus('Processing PDF & Generating Embeddings...');
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('password', password);
-
-        try {
-            const res = await fetch('/api/ingest', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) throw new Error(data.error || 'Upload failed');
-
-            setStatus(`Success! Ingested ${data.chunks} chunks from "${file.name}"`);
-            setFile(null);
-        } catch (err: any) {
-            setStatus(`Error: ${err.message}`);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDrag = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setDragActive(true);
-        } else if (e.type === "dragleave") {
-            setDragActive(false);
-        }
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const droppedFile = e.dataTransfer.files[0];
-            if (droppedFile.type === 'application/pdf') {
-                setFile(droppedFile);
-                setStatus('');
-            }
-        }
-    };
-
     return (
         <div className="admin-container">
             {/* Header */}
@@ -92,134 +32,140 @@ export default function AdminPage() {
                         </div>
                         <div>
                             <h1>Knowledge Base</h1>
-                            <p>Upload PDF documents to train your AI assistant</p>
+                            <p>Add documents using the Python ingestion script</p>
                         </div>
                     </div>
 
-                    <form onSubmit={handleUpload} className="upload-form">
-                        {/* Password Input */}
-                        <div className="form-group">
-                            <label htmlFor="password">Admin Password</label>
-                            <div className="input-wrapper">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                </svg>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your admin password"
-                                />
+                    <div className="instructions">
+                        <div className="instruction-step">
+                            <div className="step-number">1</div>
+                            <div className="step-content">
+                                <h3>Add your PDF files</h3>
+                                <p>Place your PDF documents in the <code>documents/</code> folder</p>
                             </div>
                         </div>
 
-                        {/* File Upload */}
-                        <div className="form-group">
-                            <label>PDF Document</label>
-                            <div
-                                className={`dropzone ${dragActive ? 'drag-active' : ''} ${file ? 'has-file' : ''}`}
-                                onDragEnter={handleDrag}
-                                onDragLeave={handleDrag}
-                                onDragOver={handleDrag}
-                                onDrop={handleDrop}
-                            >
-                                <input
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={(e) => {
-                                        setFile(e.target.files?.[0] || null);
-                                        setStatus('');
-                                    }}
-                                    className="file-input"
-                                />
-                                {file ? (
-                                    <div className="file-preview">
-                                        <div className="file-icon success">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                        </div>
-                                        <div className="file-info">
-                                            <span className="file-name">{file.name}</span>
-                                            <span className="file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                                            className="remove-file"
-                                        >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <line x1="18" y1="6" x2="6" y2="18" />
-                                                <line x1="6" y1="6" x2="18" y2="18" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="dropzone-content">
-                                        <div className="upload-icon">
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                                <polyline points="17 8 12 3 7 8" />
-                                                <line x1="12" y1="3" x2="12" y2="15" />
-                                            </svg>
-                                        </div>
-                                        <span className="dropzone-text">Drop your PDF here or <strong>browse</strong></span>
-                                        <span className="dropzone-hint">PDF files up to 10MB</span>
-                                    </div>
-                                )}
+                        <div className="instruction-step">
+                            <div className="step-number">2</div>
+                            <div className="step-content">
+                                <h3>Set up environment</h3>
+                                <p>Create a <code>.env</code> file with your API keys:</p>
+                                <pre>{`OPENAI_API_KEY=your_key
+PINECONE_API_KEY=your_key`}</pre>
                             </div>
                         </div>
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={loading || !file || !password}
-                            className="submit-button"
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="loading-spinner" />
-                                    <span>Processing...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                                    </svg>
-                                    <span>Start Ingestion</span>
-                                </>
-                            )}
-                        </button>
-
-                        {/* Status Message */}
-                        {status && (
-                            <div className={`status-message ${status.includes('Success') ? 'success' : status.includes('Error') ? 'error' : 'info'}`}>
-                                {status.includes('Success') ? (
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                                        <polyline points="22 4 12 14.01 9 11.01" />
-                                    </svg>
-                                ) : status.includes('Error') ? (
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
-                                ) : (
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="16" x2="12" y2="12" />
-                                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                                    </svg>
-                                )}
-                                <span>{status}</span>
+                        <div className="instruction-step">
+                            <div className="step-number">3</div>
+                            <div className="step-content">
+                                <h3>Run the ingestion script</h3>
+                                <p>Execute the Python script to process your PDFs:</p>
+                                <pre>{`pip install -r requirements.txt
+python ingest.py`}</pre>
                             </div>
-                        )}
-                    </form>
+                        </div>
+
+                        <div className="instruction-step">
+                            <div className="step-number">4</div>
+                            <div className="step-content">
+                                <h3>Start chatting!</h3>
+                                <p>Your documents are now indexed. Go back to the chat and ask questions.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="note">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        <span>PDF parsing in serverless environments has limitations. The Python script provides reliable document processing.</span>
+                    </div>
                 </div>
             </main>
+
+            <style jsx>{`
+                .instructions {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.5rem;
+                    margin-bottom: 1.5rem;
+                }
+                
+                .instruction-step {
+                    display: flex;
+                    gap: 1rem;
+                    align-items: flex-start;
+                }
+                
+                .step-number {
+                    width: 32px;
+                    height: 32px;
+                    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 0.875rem;
+                    flex-shrink: 0;
+                }
+                
+                .step-content {
+                    flex: 1;
+                }
+                
+                .step-content h3 {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    margin-bottom: 0.25rem;
+                    color: white;
+                }
+                
+                .step-content p {
+                    font-size: 0.875rem;
+                    color: rgba(255, 255, 255, 0.6);
+                    margin-bottom: 0.5rem;
+                }
+                
+                .step-content code {
+                    background: rgba(99, 102, 241, 0.2);
+                    padding: 0.125rem 0.375rem;
+                    border-radius: 4px;
+                    font-family: var(--font-geist-mono), monospace;
+                    font-size: 0.8125rem;
+                    color: #a5b4fc;
+                }
+                
+                .step-content pre {
+                    background: rgba(0, 0, 0, 0.3);
+                    padding: 0.75rem 1rem;
+                    border-radius: 8px;
+                    font-family: var(--font-geist-mono), monospace;
+                    font-size: 0.8125rem;
+                    color: #a5b4fc;
+                    overflow-x: auto;
+                    margin-top: 0.5rem;
+                }
+                
+                .note {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 0.75rem;
+                    padding: 1rem;
+                    background: rgba(251, 191, 36, 0.1);
+                    border: 1px solid rgba(251, 191, 36, 0.2);
+                    border-radius: 10px;
+                    color: #fcd34d;
+                    font-size: 0.8125rem;
+                }
+                
+                .note svg {
+                    flex-shrink: 0;
+                    margin-top: 0.125rem;
+                }
+            `}</style>
         </div>
     );
 }
