@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
 
         // pdf2json requires a promise wrapper
         const text = await new Promise<string>((resolve, reject) => {
-            const pdfParser = new PDFParser(null, true); // true = enable raw text parsing
+            // @ts-ignore
+            const pdfParser = new PDFParser(null, 1); // 1 = text content only
 
             pdfParser.on("pdfParser_dataError", (errData: any) => reject(errData.parserError));
 
