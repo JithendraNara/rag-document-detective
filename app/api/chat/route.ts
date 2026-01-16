@@ -47,9 +47,9 @@ export async function POST(req: Request) {
   console.log('Context found:', contextText.length > 0 ? 'Yes' : 'No');
   console.log('Number of matches:', queryResponse.matches.length);
 
-  // 6. Send everything to ChatGPT
+  // 6. Send everything to ChatGPT (using gpt-4o-mini for cost efficiency)
   const result = await streamText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-4o-mini'),
     system: `You are a helpful assistant. Use the specific Context below to answer the user. 
     If the answer is not in the Context, say "I don't know based on this document."
     
