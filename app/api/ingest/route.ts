@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
-
-// Disable worker for serverless environment
-GlobalWorkerOptions.workerSrc = '';
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
 
 async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
-    const pdf = await getDocument({
+    // Dynamic import to avoid bundling issues
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    
+    // Disable worker for serverless
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    
+    const pdf = await pdfjsLib.getDocument({
         data: new Uint8Array(arrayBuffer),
         useSystemFonts: true,
         disableFontFace: true,
+        isEvalSupported: false,
+        useWorkerFetch: false,
     }).promise;
 
     let fullText = '';
