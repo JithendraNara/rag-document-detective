@@ -5,34 +5,24 @@ const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
 
-async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
-    // Dynamic import to avoid bundling issues
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    
-    // Disable worker for serverless
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-    
-    const pdf = await pdfjsLib.getDocument({
-        data: new Uint8Array(arrayBuffer),
-        useSystemFonts: true,
-        disableFontFace: true,
-        isEvalSupported: false,
-        useWorkerFetch: false,
-    }).promise;
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+        // Dynamic require for pdf2json
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const PDFParser = require('pdf2json');
+        const pdfParser = new PDFParser(null, true);
 
-    let fullText = '';
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((item: any) => item.str || '')
-            .join(' ');
-        fullText += pageText + '\n';
-    }
+        pdfParser.on('pdfParser_dataError', (errData: { parserError: Error }) => {
+            reject(errData.parserError);
+        });
 
-    return fullText;
+        pdfParser.on('pdfParser_dataReady', () => {
+            const text = pdfParser.getRawTextContent();
+            resolve(text);
+        });
+
+        pdfParser.parseBuffer(buffer);
+    });
 }
 
 export async function POST(req: NextRequest) {
@@ -52,7 +42,8 @@ export async function POST(req: NextRequest) {
 
         // 2. Read PDF
         const arrayBuffer = await file.arrayBuffer();
-        const text = await extractTextFromPDF(arrayBuffer);
+        const buffer = Buffer.from(arrayBuffer);
+        const text = await extractTextFromPDF(buffer);
 
         if (!text || text.trim().length === 0) {
             return NextResponse.json({ error: 'Could not extract text from PDF' }, { status: 400 });
