@@ -2,6 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
 
+// Polyfill for Vercel Serverless environment to prevent DOMMatrix errors
+if (typeof global.DOMMatrix === 'undefined') {
+    // @ts-ignore
+    global.DOMMatrix = class DOMMatrix { };
+}
+if (typeof global.ImageData === 'undefined') {
+    // @ts-ignore
+    global.ImageData = class ImageData { };
+}
+if (typeof global.Path2D === 'undefined') {
+    // @ts-ignore
+    global.Path2D = class Path2D { };
+}
+
 // Use require for pdf-parse (it works best with next.config.ts canvas: false)
 // @ts-ignore
 const pdf = require('pdf-parse');
