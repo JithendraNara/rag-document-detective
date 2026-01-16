@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['pdf-parse'],
-  },
+  serverExternalPackages: ['pdf-parse'],
   webpack: (config, { isServer }) => {
     // Handle canvas for pdf-parse
     config.resolve.alias.canvas = false;
