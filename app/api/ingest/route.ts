@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
 
-// Use the legacy build which works in Node.js environments without DOM
-const pdfjsLib = require("pdfjs-dist/legacy/build/pdf.js");
+// Use dynamic import for the legacy build to ensure Node.js compatibility
+// @ts-ignore
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
