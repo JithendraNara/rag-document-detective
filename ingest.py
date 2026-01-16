@@ -61,8 +61,17 @@ def ingest_pdf(file_path):
 
 # Run it!
 if __name__ == "__main__":
-    # First, ensure the Pinecone index exists
     ensure_index_exists()
     
-    # Then ingest the PDF (change this path to your file)
-    ingest_pdf("/Users/jithendranara/Downloads/lease.pdf")
+    # Define the directory containing PDFs
+    pdf_directory = "./documents"
+    
+    # Check if directory exists
+    if os.path.exists(pdf_directory):
+        # Loop through all files in the directory
+        for filename in os.listdir(pdf_directory):
+            if filename.endswith(".pdf"):
+                file_path = os.path.join(pdf_directory, filename)
+                ingest_pdf(file_path)
+    else:
+        print(f"Directory '{pdf_directory}' not found. Please create it and add your PDFs.")
