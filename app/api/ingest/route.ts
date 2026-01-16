@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
 // @ts-ignore
-const pdf = require('pdf-parse');
+import PDFParser from 'pdf2json';
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
@@ -23,18 +23,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF
+        // 2. Read PDF using pdf2json
         const buffer = Buffer.from(await file.arrayBuffer());
-        const data = await pdf(buffer);
-        const text = data.text;
+
+        // pdf2json requires a promise wrapper
+        const text = await new Promise<string>((resolve, reject) => {
+            const pdfParser = new PDFParser(null, 1); // 1 = text content only
+
+            pdfParser.on("pdfParser_dataError", (errData: any) => reject(errData.parserError));
+
+            pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+                // Extract raw text
+                resolve(pdfParser.getRawTextContent());
+            });
+
+            pdfParser.parseBuffer(buffer);
+        });
 
         // 3. Chunk Text (Simple implementation)
         const chunkSize = 1000;
         const overlap = 200;
         const chunks: string[] = [];
 
-        for (let i = 0; i < text.length; i += chunkSize - overlap) {
-            chunks.push(text.slice(i, i + chunkSize));
+        // Clean text a bit
+        const cleanedText = text.replace(/----------------Page \(\d+\) Break----------------/g, '');
+
+        for (let i = 0; i < cleanedText.length; i += chunkSize - overlap) {
+            chunks.push(cleanedText.slice(i, i + chunkSize));
         }
 
         // 4. Generate Embeddings & Upload to Pinecone
