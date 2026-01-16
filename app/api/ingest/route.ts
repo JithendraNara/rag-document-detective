@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
-import pdf from 'pdf-parse';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdf = require('pdf-parse');
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
