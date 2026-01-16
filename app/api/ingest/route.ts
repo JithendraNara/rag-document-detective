@@ -2,9 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
 
-// Use dynamic import for the legacy build to ensure Node.js compatibility
+// Use require for pdf-parse (it works best with next.config.ts canvas: false)
 // @ts-ignore
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+const pdf = require('pdf-parse');
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
@@ -25,36 +25,20 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF using pdfjs-dist
+        // 2. Read PDF using pdf-parse
         const buffer = Buffer.from(await file.arrayBuffer());
 
-        // Load the document (as Uint8Array)
-        const data = new Uint8Array(buffer);
-        const loadingTask = pdfjsLib.getDocument({ data });
-        const pdfDocument = await loadingTask.promise;
-
-        let fullText = "";
-
-        // Iterate over all pages
-        for (let i = 1; i <= pdfDocument.numPages; i++) {
-            const page = await pdfDocument.getPage(i);
-            const textContent = await page.getTextContent();
-
-            // Extract strings from text items
-            const pageText = textContent.items
-                .map((item: any) => item.str)
-                .join(" ");
-
-            fullText += pageText + "\n";
-        }
+        // pdf-parse is synchronous/promise-based and simple
+        const data = await pdf(buffer);
+        const text = data.text;
 
         // 3. Chunk Text
         const chunkSize = 1000;
         const overlap = 200;
         const chunks: string[] = [];
 
-        for (let i = 0; i < fullText.length; i += chunkSize - overlap) {
-            chunks.push(fullText.slice(i, i + chunkSize));
+        for (let i = 0; i < text.length; i += chunkSize - overlap) {
+            chunks.push(text.slice(i, i + chunkSize));
         }
 
         // 4. Generate Embeddings & Upload to Pinecone
