@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
   // 3. Turn the user's question into a "vector" (numbers)
   // MUST use the same model as your ingest.py script!
-  const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
+  const index = pinecone.index(process.env.PINECONE_INDEX_NAME || "doc-chat");
 
   // We use OpenAI directly to generate the embedding for the query
   const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
