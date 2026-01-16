@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
+import pdf from 'pdf-parse';
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
@@ -20,14 +21,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF using custom wrapper (avoids test file loading)
+        // 2. Read PDF
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        
-        // Use require to import the custom wrapper
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const pdfParse = require('../../../lib/pdf-parse-wrapper');
-        const data = await pdfParse(buffer);
+        const data = await pdf(buffer);
         const text: string = data.text;
 
         if (!text || text.trim().length === 0) {
