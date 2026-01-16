@@ -1,6 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
 
+// Polyfills for Vercel Serverless environment (required by pdfjs-dist)
+if (typeof globalThis.DOMMatrix === 'undefined') {
+    // @ts-expect-error - Polyfill for serverless
+    globalThis.DOMMatrix = class DOMMatrix {
+        constructor() { return this; }
+        m11 = 1; m12 = 0; m13 = 0; m14 = 0;
+        m21 = 0; m22 = 1; m23 = 0; m24 = 0;
+        m31 = 0; m32 = 0; m33 = 1; m34 = 0;
+        m41 = 0; m42 = 0; m43 = 0; m44 = 1;
+        a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+        is2D = true;
+        isIdentity = true;
+        inverse() { return new DOMMatrix(); }
+        multiply() { return new DOMMatrix(); }
+        scale() { return new DOMMatrix(); }
+        translate() { return new DOMMatrix(); }
+        transformPoint() { return { x: 0, y: 0, z: 0, w: 1 }; }
+    };
+}
+
+if (typeof globalThis.Path2D === 'undefined') {
+    // @ts-expect-error - Polyfill for serverless
+    globalThis.Path2D = class Path2D {
+        constructor() { return this; }
+        addPath() {}
+        closePath() {}
+        moveTo() {}
+        lineTo() {}
+        bezierCurveTo() {}
+        quadraticCurveTo() {}
+        arc() {}
+        arcTo() {}
+        ellipse() {}
+        rect() {}
+    };
+}
+
+if (typeof globalThis.ImageData === 'undefined') {
+    // @ts-expect-error - Polyfill for serverless
+    globalThis.ImageData = class ImageData {
+        width = 0;
+        height = 0;
+        data = new Uint8ClampedArray();
+        constructor(width: number, height: number) {
+            this.width = width || 0;
+            this.height = height || 0;
+            this.data = new Uint8ClampedArray((width || 0) * (height || 0) * 4);
+        }
+    };
+}
+
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
