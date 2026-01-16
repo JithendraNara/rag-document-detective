@@ -1,32 +1,17 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
-
-// Polyfill for Vercel Serverless environment to prevent DOMMatrix errors
-if (typeof global.DOMMatrix === 'undefined') {
-    // @ts-ignore
-    global.DOMMatrix = class DOMMatrix { };
-}
-if (typeof global.ImageData === 'undefined') {
-    // @ts-ignore
-    global.ImageData = class ImageData { };
-}
-if (typeof global.Path2D === 'undefined') {
-    // @ts-ignore
-    global.Path2D = class Path2D { };
-}
-
-// Use require for pdf-parse (it works best with next.config.ts canvas: false)
-// @ts-ignore
-let pdf = require('pdf-parse');
-// Handle ES Module default export if present
-if (typeof pdf !== 'function' && pdf.default) {
-    pdf = pdf.default;
-}
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
+
+// Dynamic import function for pdf-parse
+async function parsePDF(buffer: Buffer): Promise<string> {
+    // Import pdf-parse dynamically
+    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
+    const data = await pdfParse(buffer);
+    return data.text;
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -45,10 +30,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Read PDF using pdf-parse
         const buffer = Buffer.from(await file.arrayBuffer());
-
-        // pdf-parse is synchronous/promise-based and simple
-        const data = await pdf(buffer);
-        const text = data.text;
+        const text = await parsePDF(buffer);
 
         // 3. Chunk Text
         const chunkSize = 1000;
