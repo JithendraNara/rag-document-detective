@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
-import { extractText } from 'unpdf';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+// Disable worker for serverless environment
+GlobalWorkerOptions.workerSrc = '';
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
 });
+
+async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
+    const pdf = await getDocument({
+        data: new Uint8Array(arrayBuffer),
+        useSystemFonts: true,
+        disableFontFace: true,
+    }).promise;
+
+    let fullText = '';
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+            .map((item: { str?: string }) => item.str || '')
+            .join(' ');
+        fullText += pageText + '\n';
+    }
+
+    return fullText;
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,9 +45,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF using unpdf (serverless-friendly)
+        // 2. Read PDF
         const arrayBuffer = await file.arrayBuffer();
-        const { text } = await extractText(arrayBuffer);
+        const text = await extractTextFromPDF(arrayBuffer);
 
         if (!text || text.trim().length === 0) {
             return NextResponse.json({ error: 'Could not extract text from PDF' }, { status: 400 });

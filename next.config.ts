@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['pdfjs-dist'],
   webpack: (config) => {
     config.resolve.alias.canvas = false;
+    config.resolve.alias.encoding = false;
     return config;
   },
 };
