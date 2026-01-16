@@ -22,8 +22,8 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items
-            .filter((item): item is { str: string } => 'str' in item)
-            .map((item) => item.str)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((item: any) => item.str || '')
             .join(' ');
         fullText += pageText + '\n';
     }
