@@ -1,8 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
-// @ts-ignore
-import PDFParser from 'pdf2json';
+
+// Use the legacy build which works in Node.js environments without DOM
+const pdfjsLib = require("pdfjs-dist/legacy/build/pdf.js");
 
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY!,
@@ -23,40 +24,42 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        // 2. Read PDF using pdf2json
+        // 2. Read PDF using pdfjs-dist
         const buffer = Buffer.from(await file.arrayBuffer());
 
-        // pdf2json requires a promise wrapper
-        const text = await new Promise<string>((resolve, reject) => {
-            // @ts-ignore
-            const pdfParser = new PDFParser(null, 1); // 1 = text content only
+        // Load the document (as Uint8Array)
+        const data = new Uint8Array(buffer);
+        const loadingTask = pdfjsLib.getDocument({ data });
+        const pdfDocument = await loadingTask.promise;
 
-            pdfParser.on("pdfParser_dataError", (errData: any) => reject(errData.parserError));
+        let fullText = "";
 
-            pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
-                // Extract raw text
-                resolve(pdfParser.getRawTextContent());
-            });
+        // Iterate over all pages
+        for (let i = 1; i <= pdfDocument.numPages; i++) {
+            const page = await pdfDocument.getPage(i);
+            const textContent = await page.getTextContent();
 
-            pdfParser.parseBuffer(buffer);
-        });
+            // Extract strings from text items
+            const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(" ");
 
-        // 3. Chunk Text (Simple implementation)
+            fullText += pageText + "\n";
+        }
+
+        // 3. Chunk Text
         const chunkSize = 1000;
         const overlap = 200;
         const chunks: string[] = [];
 
-        // Clean text a bit
-        const cleanedText = text.replace(/----------------Page \(\d+\) Break----------------/g, '');
-
-        for (let i = 0; i < cleanedText.length; i += chunkSize - overlap) {
-            chunks.push(cleanedText.slice(i, i + chunkSize));
+        for (let i = 0; i < fullText.length; i += chunkSize - overlap) {
+            chunks.push(fullText.slice(i, i + chunkSize));
         }
 
         // 4. Generate Embeddings & Upload to Pinecone
         const index = pinecone.index(process.env.PINECONE_INDEX_NAME || 'doc-chat');
 
-        // Process in batches to avoid rate limits
+        // Process in batches
         const batchSize = 10;
         for (let i = 0; i < chunks.length; i += batchSize) {
             const batch = chunks.slice(i, i + batchSize);
